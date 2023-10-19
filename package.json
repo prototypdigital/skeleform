@@ -19,8 +19,7 @@
     }
   },
   "scripts": {
-    "prepare": "yarn build",
-    "build": "tsc"
+    "prepack": "tsc"
   },
   "devDependencies": {
     "@types/jest": "29.4.0",
