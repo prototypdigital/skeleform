@@ -3,7 +3,7 @@
   "description": "React/React-Native form management utility",
   "author": "Luka Buljan <luka@prototyp.digital>",
   "version": "1.0.0",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "types": "lib/typescript/src/index.d.ts",
   "main": "lib/module/index.js",
   "react-native": "src/index.ts",
