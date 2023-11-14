@@ -18,9 +18,6 @@ export type FormConfig<R> = {
   optional?: Array<keyof R>;
   /** Validation rules by specified property name. If you define a validation rule function here, the field will be validated against it. If no rule is set, a crude value check will be used instead (optional || Boolean(value)). Note: For complex value types (objects, arrays, dates etc) it is best to use a custom validation rule. */
   rules?: Rules<R>;
-  /** Will compare key/value pairs instead of just top level JSON.stringify on complex objects/arrays */
-  deepCompare?: boolean;
-  logging?: boolean;
 };
 
 /** One-fits-all solution to manage state changes, field validation and optional entries within a form.
