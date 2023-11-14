@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type Validation<T> = { [K in keyof Partial<T>]?: boolean };
 export type Rules<T> = {
@@ -77,19 +77,19 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
   /** Validate entire form, store validation state and return validation value.
    * In human readable terms, use this when you want to validate the form on submit.
    */
-  function validateForm(): boolean {
+  const validateForm = useCallback(() => {
     const formValidationState = stateValidation(state);
     setValidation(formValidationState.validation);
     return formValidationState.valid;
-  }
+  }, [state]);
 
   /** Boolean value of whether the form is valid (ie can be submitted). Use this to disable/enable form submission.
    * Only use when validating fields separately, has no value when valiating on form submit. */
-  function isFormValid() {
+  const isFormValid = useCallback(() => {
     return !keys.some((key) =>
       isOptional(key) ? validation[key] === false : !validation[key]
     );
-  }
+  }, [validation, config]);
 
   /** Resets changed values to initial state */
   function resetState() {
@@ -114,7 +114,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
   }
 
   /** Whether form values have changed in any way from their initial state.  */
-  function hasStateChanged() {
+  const hasStateChanged = useCallback(() => {
     return keys.some((key) => {
       const value = state[key];
       const initialValue: typeof value = initialState[key];
@@ -132,7 +132,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
       /** Primitive value check. */
       return value !== initialValue;
     });
-  }
+  }, [state, initialState]);
 
   return {
     state,
@@ -173,18 +173,18 @@ export function useFormUtils<T>(config?: FormConfig<T>) {
     return true;
   }
 
-  function isOptional(key: keyof T) {
-    return config?.optional?.includes(key) || false;
-  }
+  const isOptional = useCallback(
+    (key: keyof T) => config?.optional?.includes(key) || false,
+    [config]
+  );
 
   /** Validate by custom validation rule. If the rule does not exist, returns undefined. */
-  function validateByRule<K extends keyof T>(
-    key: K,
-    value: T[K],
-    state: Values<T>
-  ) {
-    return config?.rules?.[key]?.(value, state, isOptional(key));
-  }
+  const validateByRule = useCallback(
+    <K extends keyof T>(key: K, value: T[K], state: Values<T>) => {
+      return config?.rules?.[key]?.(value, state, isOptional(key));
+    },
+    [config]
+  );
 
   /** Handles validation for a specific form field.
    * Order of priority:
