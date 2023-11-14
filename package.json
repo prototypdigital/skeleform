@@ -2,7 +2,7 @@
   "name": "@prototyp/skeleform",
   "description": "React/React-Native form management utility",
   "author": "Luka Buljan <luka@prototyp.digital>",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "homepage": "https://github.com/prototypdigital/skeleform",
   "repository": {

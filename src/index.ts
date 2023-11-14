@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type Validation<T> = { [K in keyof Partial<T>]?: boolean };
-type Rules<T> = {
+export type Rules<T> = {
   [K in keyof T]?: (
     value: T[K],
     state: T,
@@ -30,12 +30,13 @@ export type FormConfig<R> = {
  *
  */
 export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
-  const keys = Object.keys(values) as Array<keyof T>;
+  const keys = useMemo(() => Object.keys(values) as Array<keyof T>, [values]);
   const [validation, setValidation] = useState<Validation<T>>({});
   const [initialState, setInitialState] = useState(values);
   const [state, setState] = useState(values);
   const { fieldValidation, stateValidation, isOptional } = useFormUtils(config);
 
+  /** Rehydrate current state with new initial values if changed. */
   useEffect(() => {
     const changed = keys.filter((key) => values[key] !== initialState[key]);
     if (!changed.length) {
@@ -111,6 +112,14 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
     resetValidation();
   }
 
+  /** Whether form values have changed in any way from their initial state.  */
+  function hasStateChanged() {
+    return Object.keys(state).some((key) => {
+      const typedKey = key as keyof T;
+      state[typedKey] !== initialState[typedKey];
+    });
+  }
+
   return {
     state,
     validation,
@@ -118,6 +127,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
     validate,
     validateForm,
     isFormValid,
+    hasStateChanged,
     clearForm,
     resetState,
     resetValidation,
