@@ -28,6 +28,7 @@ export type FormConfig<R> = {
  * @example <caption>For more complex form states (ie one field can be of multiple types), you should pass the form's type:</caption>
  * const { state, validation, update } = useForm<{ numericOrUndefined: number | undefined }>({ numericOrUndefined: undefined }, { rules: { numericOrUndefined: (value: number | undefined): boolean | undefined => ... }});
  *
+ * Note: Avoid using class constructors for form state as it will continuously re-render the form. Every class construct is a new object, so the initial values parameter will always be different thus causing an infinite loop of re-renders. Use plain objects instead or memoize classes before passing them into the hook.
  */
 export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
   const keys = useMemo(() => Object.keys(values) as Array<keyof T>, [values]);
@@ -114,7 +115,23 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 
   /** Whether form values have changed in any way from their initial state.  */
   function hasStateChanged() {
-    return keys.some((key) => state[key] !== initialState[key]);
+    return keys.some((key) => {
+      const value = state[key];
+      const initialValue: typeof value = initialState[key];
+
+      /** Check Date values. Dates are also object instances, but we can check their values easily. */
+      if (value instanceof Date) {
+        return initialValue instanceof Date ? +value !== +initialValue : true;
+      }
+
+      /** Check object values in a crude manner. Deep compares are expensive, this works but is sensitive to prop order. Could potentially provide a false positive if objects are the same, but values are ordered differently (ie two arrays, same values but at different indexes == different arrays.) */
+      if (state[key] instanceof Object) {
+        return JSON.stringify(state[key]) !== JSON.stringify(initialState[key]);
+      }
+
+      /** Primitive value check. */
+      return value !== initialValue;
+    });
   }
 
   return {
