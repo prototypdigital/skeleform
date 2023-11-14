@@ -114,10 +114,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 
   /** Whether form values have changed in any way from their initial state.  */
   function hasStateChanged() {
-    return Object.keys(state).some((key) => {
-      const typedKey = key as keyof T;
-      state[typedKey] !== initialState[typedKey];
-    });
+    return keys.some((key) => state[key] !== initialState[key]);
   }
 
   return {
