@@ -5,7 +5,7 @@ export type Rules<T> = {
   [K in keyof T]?: (
     value: T[K],
     state: T,
-    optional: boolean
+    optional: boolean,
   ) => boolean | undefined;
 };
 
@@ -39,13 +39,13 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 
   /** Rehydrate current state with new initial values if changed. */
   useEffect(() => {
-    const changed = keys.filter((key) => values[key] !== initialState[key]);
+    const changed = keys.filter(key => values[key] !== initialState[key]);
     if (!changed.length) {
       return;
     }
 
     const updatedState = { ...state };
-    changed.forEach((key) => (updatedState[key] = values[key]));
+    changed.forEach(key => (updatedState[key] = values[key]));
 
     setInitialState({ ...values, ...updatedState });
     setState(updatedState);
@@ -58,17 +58,17 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
   function update<K extends keyof T>(
     key: K,
     value: Values<T>[K],
-    shouldValidate?: boolean
+    shouldValidate?: boolean,
   ) {
-    setState((s) => ({ ...s, [key]: value }));
-    setValidation((s) => ({
+    setState(s => ({ ...s, [key]: value }));
+    setValidation(s => ({
       ...s,
       [key]: shouldValidate ? fieldValidation(key, value, state) : undefined,
     }));
   }
 
   function validate<K extends keyof T>(key: K) {
-    setValidation((s) => ({
+    setValidation(s => ({
       ...s,
       [key]: fieldValidation(key, state[key], state),
     }));
@@ -86,8 +86,8 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
   /** Boolean value of whether the form is valid (ie can be submitted). Use this to disable/enable form submission.
    * Only use when validating fields separately, has no value when valiating on form submit. */
   const isFormValid = useCallback(() => {
-    return !keys.some((key) =>
-      isOptional(key) ? validation[key] === false : !validation[key]
+    return !keys.some(key =>
+      isOptional(key) ? validation[key] === false : !validation[key],
     );
   }, [validation, config]);
 
@@ -115,7 +115,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 
   /** Whether form values have changed in any way from their initial state.  */
   const hasStateChanged = useCallback(() => {
-    return keys.some((key) => {
+    return keys.some(key => {
       const value = state[key];
       const initialValue: typeof value = initialState[key];
 
@@ -152,7 +152,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 /** Helper hook to validate form state outside of the scope of useForm. */
 export function useFormUtils<T>(config?: FormConfig<T>) {
   function doesValueExist(
-    value: T[keyof T]
+    value: T[keyof T],
   ): value is Exclude<T[keyof T], null | undefined> {
     if (value === undefined || value === null) {
       return false;
@@ -175,7 +175,7 @@ export function useFormUtils<T>(config?: FormConfig<T>) {
 
   const isOptional = useCallback(
     (key: keyof T) => config?.optional?.includes(key) || false,
-    [config]
+    [config],
   );
 
   /** Validate by custom validation rule. If the rule does not exist, returns undefined. */
@@ -183,7 +183,7 @@ export function useFormUtils<T>(config?: FormConfig<T>) {
     <K extends keyof T>(key: K, value: T[K], state: Values<T>) => {
       return config?.rules?.[key]?.(value, state, isOptional(key));
     },
-    [config]
+    [config],
   );
 
   /** Handles validation for a specific form field.
@@ -196,25 +196,29 @@ export function useFormUtils<T>(config?: FormConfig<T>) {
     const optional = isOptional(key);
 
     // If form has custom validation rule, always trigger only that.
-    if (!!config?.rules?.[key]) return validateByRule(key, value, state);
+    if (config?.rules?.[key]) {
+      return validateByRule(key, value, state);
+    }
     // If value does not exist (is null, undefined or other falsy value), check if field is optional.
-    if (!hasValue) return !!optional;
+    if (!hasValue) {
+      return !!optional;
+    }
     // Fallback, simple check if value exists
     return hasValue;
   }
 
   function stateValidation(state: Values<T>) {
-    const keys = Object.keys(state).map((key) => key as keyof T);
+    const keys = Object.keys(state).map(key => key as keyof T);
     const validation: Validation<T> = {};
 
-    keys.forEach((key) => {
+    keys.forEach(key => {
       const value = state[key];
       // Force true / false values for entire form. Undefined has no value when submitting.
       validation[key] = fieldValidation(key, value, state) || false;
     });
 
     return {
-      valid: !keys.some((key) => !validation[key]),
+      valid: !keys.some(key => !validation[key]),
       validation,
     };
   }
