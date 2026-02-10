@@ -45,9 +45,9 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 		}
 
 		const updatedState = { ...state };
-		// biome-ignore lint/complexity/noForEach: <explanation>
-		// biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-		changed.forEach((key) => (updatedState[key] = values[key]));
+		changed.forEach((key) => {
+			updatedState[key] = values[key];
+		});
 
 		setInitialState({ ...values, ...updatedState });
 		setState(updatedState);
@@ -213,7 +213,6 @@ export function useFormUtils<T>(config?: FormConfig<T>) {
 		const keys = Object.keys(state).map((key) => key as keyof T);
 		const validation: Validation<T> = {};
 
-		// biome-ignore lint/complexity/noForEach: <explanation>
 		keys.forEach((key) => {
 			const value = state[key];
 			// Force true / false values for entire form. Undefined has no value when submitting.
