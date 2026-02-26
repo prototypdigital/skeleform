@@ -20,6 +20,26 @@ export type FormConfig<R> = {
 	rules?: Rules<R>;
 };
 
+function deepEqual(a: unknown, b: unknown): boolean {
+	if (a === b) return true;
+	if (a instanceof Date && b instanceof Date) return +a === +b;
+	if (a === null || b === null) return false;
+	if (typeof a !== "object" || typeof b !== "object") return false;
+	if (Array.isArray(a) !== Array.isArray(b)) return false;
+	if (Array.isArray(a) && Array.isArray(b)) {
+		if (a.length !== b.length) return false;
+		return a.every((item, i) => deepEqual(item, b[i]));
+	}
+	const keysA = Object.keys(a as object);
+	if (keysA.length !== Object.keys(b as object).length) return false;
+	return keysA.every((key) =>
+		deepEqual(
+			(a as Record<string, unknown>)[key],
+			(b as Record<string, unknown>)[key],
+		),
+	);
+}
+
 /** One-fits-all solution to manage state changes, field validation and optional entries within a form.
  * @example <caption>Simple use case:</caption>
  *  const { state, validation, update } = useForm({ email: '', password: '', });
@@ -63,9 +83,11 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 		shouldValidate?: boolean,
 	) {
 		setState((s) => ({ ...s, [key]: value }));
-		setValidation((s) => ({
-			...s,
-			[key]: shouldValidate ? fieldValidation(key, value, state) : undefined,
+		setValidation((validation) => ({
+			...validation,
+			[key]: shouldValidate
+				? fieldValidation(key, value, { ...state, [key]: value })
+				: undefined,
 		}));
 	}
 
@@ -83,7 +105,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 		const formValidationState = stateValidation(state);
 		setValidation(formValidationState.validation);
 		return formValidationState.valid;
-	}, [state]);
+	}, [stateValidation, state]);
 
 	/** Boolean value of whether the form is valid (ie can be submitted). Use this to disable/enable form submission.
 	 * Only use when validating fields separately, has no value when valiating on form submit. */
@@ -126,9 +148,9 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 				return initialValue instanceof Date ? +value !== +initialValue : true;
 			}
 
-			/** Check object values in a crude manner. Deep compares are expensive, this works but is sensitive to prop order. Could potentially provide a false positive if objects are the same, but values are ordered differently (ie two arrays, same values but at different indexes == different arrays.) */
+			/** Deep equality check for objects and arrays. */
 			if (state[key] instanceof Object) {
-				return JSON.stringify(state[key]) !== JSON.stringify(initialState[key]);
+				return !deepEqual(state[key], initialState[key]);
 			}
 
 			/** Primitive value check. */
@@ -209,21 +231,24 @@ export function useFormUtils<T>(config?: FormConfig<T>) {
 		return hasValue;
 	}
 
-	function stateValidation(state: Values<T>) {
-		const keys = Object.keys(state).map((key) => key as keyof T);
-		const validation: Validation<T> = {};
+	const stateValidation = useCallback(
+		(state: Values<T>) => {
+			const keys = Object.keys(state).map((key) => key as keyof T);
+			const validation: Validation<T> = {};
 
-		keys.forEach((key) => {
-			const value = state[key];
-			// Force true / false values for entire form. Undefined has no value when submitting.
-			validation[key] = fieldValidation(key, value, state) || false;
-		});
+			keys.forEach((key) => {
+				const value = state[key];
+				// Force true / false values for entire form. Undefined has no value when submitting.
+				validation[key] = fieldValidation(key, value, state) || false;
+			});
 
-		return {
-			valid: !keys.some((key) => !validation[key]),
-			validation,
-		};
-	}
+			return {
+				valid: !keys.some((key) => !validation[key]),
+				validation,
+			};
+		},
+		[fieldValidation],
+	);
 
 	return {
 		doesValueExist,
