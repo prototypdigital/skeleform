@@ -173,30 +173,30 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 	};
 }
 
-/** Helper hook to validate form state outside of the scope of useForm. */
-export function useFormUtils<T>(config?: FormConfig<T>) {
-	function doesValueExist(
-		value: T[keyof T],
-	): value is Exclude<T[keyof T], null | undefined> {
-		if (value === undefined || value === null) {
-			return false;
-		}
-
-		if (typeof value === "string") {
-			return value !== "";
-		}
-
-		if (typeof value === "number") {
-			return value >= 0 || value < 0 || !Number.isNaN(value);
-		}
-
-		if (value instanceof Date) {
-			return !Number.isNaN(value.valueOf());
-		}
-
-		return true;
+function doesValueExist<T>(
+	value: T,
+): value is Exclude<T, null | undefined> {
+	if (value === undefined || value === null) {
+		return false;
 	}
 
+	if (typeof value === "string") {
+		return value !== "";
+	}
+
+	if (typeof value === "number") {
+		return value >= 0 || value < 0 || !Number.isNaN(value);
+	}
+
+	if (value instanceof Date) {
+		return !Number.isNaN(value.valueOf());
+	}
+
+	return true;
+}
+
+/** Helper hook to validate form state outside of the scope of useForm. */
+export function useFormUtils<T>(config?: FormConfig<T>) {
 	const isOptional = useCallback(
 		(key: keyof T) => config?.optional?.includes(key) || false,
 		[config],
@@ -215,21 +215,24 @@ export function useFormUtils<T>(config?: FormConfig<T>) {
 	 * 1. If there is a custom validation rule, always use that to preserve all possible type values
 	 * 2. If there is no value (is a falsy value), check if the field is optional
 	 * 3. Fallback to simple truthy value check if all other checks are not triggered. */
-	function fieldValidation(key: keyof T, value: T[keyof T], state: Values<T>) {
-		const hasValue = doesValueExist(value);
-		const optional = isOptional(key);
+	const fieldValidation = useCallback(
+		(key: keyof T, value: T[keyof T], state: Values<T>) => {
+			const hasValue = doesValueExist(value);
+			const optional = isOptional(key);
 
-		// If form has custom validation rule, always trigger only that.
-		if (config?.rules?.[key]) {
-			return validateByRule(key, value, state);
-		}
-		// If value does not exist (is null, undefined or other falsy value), check if field is optional.
-		if (!hasValue) {
-			return !!optional;
-		}
-		// Fallback, simple check if value exists
-		return hasValue;
-	}
+			// If form has custom validation rule, always trigger only that.
+			if (config?.rules?.[key]) {
+				return validateByRule(key, value, state);
+			}
+			// If value does not exist (is null, undefined or other falsy value), check if field is optional.
+			if (!hasValue) {
+				return !!optional;
+			}
+			// Fallback, simple check if value exists
+			return hasValue;
+		},
+		[isOptional, validateByRule, config],
+	);
 
 	const stateValidation = useCallback(
 		(state: Values<T>) => {
