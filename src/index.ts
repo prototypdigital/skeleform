@@ -173,9 +173,7 @@ export function useForm<T>(values: Values<T>, config?: FormConfig<T>) {
 	};
 }
 
-function doesValueExist<T>(
-	value: T,
-): value is Exclude<T, null | undefined> {
+function doesValueExist<T>(value: T): value is Exclude<T, null | undefined> {
 	if (value === undefined || value === null) {
 		return false;
 	}
